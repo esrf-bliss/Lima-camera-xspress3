@@ -44,6 +44,7 @@ Interface::Interface(Camera& cam) :
 	HwSyncCtrlObj *sync = &m_sync;
 	m_cap_list.push_back(sync);
 
+
 	m_sync.setNbFrames(1);
 	m_sync.setExpTime(1.0);
 	m_sync.setLatTime(0.0);
