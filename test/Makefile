@@ -26,6 +26,13 @@ SRCS = Xspress3Test.cpp hdftest.cpp
 
 LDFLAGS = -pthread -L../../../build  -L../../../third-party/Processlib/build 
 LDLIBS = -llimaxspress3 -llimacore  -lprocesslib 
+PROCESSOR_TYPE := $(shell uname -m)
+ifeq ($(PROCESSOR_TYPE),x86_64)
+XSPRESS3_LDFLAGS	:= -L../camera/xspress3/sdk/libs/linux.x86_64
+else
+XSPRESS3_LDFLAGS	:= -L../camera/xspress3/sdk/libs/linux.x86
+endif
+XSPRESS3_LDLIBS	:= -lxspress3 -limg_mod
 
 CXXFLAGS = -I../include \
 	       -I../../../hardware/include \
@@ -44,16 +51,12 @@ CXXFLAGS += -DWITH_CONFIG -I../../third-party/libconfig/lib
 LDLIBS += -L../../../third-party/libconfig/lib/.libs -lconfig
 endif
 
-ifneq ($(COMPILE_HDF5_SAVING),0)
-PROCESSOR_TYPE := $(shell uname -m)
 ifeq ($(PROCESSOR_TYPE),x86_64)
-LDLIBS += -L../../../third-party/hdf5-1.8.12/libs/linux.x86_64 -lhdf5_cpp -lhdf5 -lsz
-XSPRESS3_LDLIBS	:= -L../sdk/libs/linux.x86_64 -lxspress3 -limg_mod
+HDF5_LDFLAGS := -L../../../third-party/hdf5-1.8.12/libs/linux.x86_64
 else
-LDLIBS += -L../../../third-party/hdf5-1.8.12/libs/linux.x86 -lhdf5_cpp -lhdf5 -lsz
-XSPRESS3_LDLIBS	:= -L../sdk/libs/linux.x86 -lxspress3 -limg_mod
+HDF5_LDFLAGS := -L../../../third-party/hdf5-1.8.12/libs/linux.x86
 endif
-endif
+HDF5_LDLIBS := -lhdf5_cpp -lhdf5 -lsz
 
 ifneq ($(COMPILE_SPS),0)
 CXXFLAGS += -DWITH_SPS_IMAGE -I../../third-party/libconfig/lib
@@ -65,10 +68,10 @@ test-progs = xspress3test hdf5
 all: 	$(test-progs)
 
 xspress3test:	Xspress3Test.o ../src/Xspress3.o
-	$(CXX) $(LDFLAGS) -o $@ $+ $(XSPRESS3_LDLIBS) $(LDLIBS)
+	$(CXX) $(LDFLAGS) -o $@ $+ $(XSPRESS3_LDFLAGS) $(XSPRESS3_LDLIBS) $(HDF5_LDFLAGS) $(HDF5_LDLIBS) $(LDLIBS)
 
 hdf5:	hdftest.o
-	$(CXX) $(LDFLAGS) -o $@ $+  $(LDLIBS)
+	$(CXX) $(LDFLAGS) -o $@ $+  $(HDF5_LDFLAGS) $(HDF5_LDLIBS)
 
 clean:
 	rm -f *.o *.P Xspress3Test hdf5test

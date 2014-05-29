@@ -50,7 +50,7 @@ const int xPixelSize = 1;
 const int yPixelSize = 1;
 
 class BufferCtrlObj;
-//class SavingCtrlObj;
+class SavingCtrlObj;
 
 /*******************************************************************
  * \class Camera
@@ -108,7 +108,7 @@ public:
 	HwBufferCtrlObj* getBufferCtrlObj();
 
 	// -- Saving control object
-//	SavingCtrlObj* getSavingCtrlObj();
+	SavingCtrlObj* getSavingCtrlObj();
 
 	//-- Synch control object
 	void setTrigMode(TrigMode mode);
@@ -213,7 +213,7 @@ private:
 	int m_card;
 
 	// Lima
-	AcqThread *m_acq_thread;   // Thread to hadle data acquisition
+	AcqThread *m_acq_thread;   // Thread to handle data acquisition
 	ReadThread *m_read_thread; // Thread to handle reading the data into the Lima buffers and writing the output file
 	TrigMode m_trigger_mode;
 	double m_exp_time;
@@ -229,7 +229,7 @@ private:
 
 	// Buffer control object
 	SoftBufferCtrlObj m_bufferCtrlObj;
-//	SavingCtrlObj m_savingCtrlObj;
+	SavingCtrlObj m_savingCtrlObj;
 
 	void readFrame(void* ptr, int frame_nb);
 };

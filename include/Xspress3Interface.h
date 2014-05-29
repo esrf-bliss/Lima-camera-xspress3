@@ -40,7 +40,7 @@ class Camera;
  * \class SavingCtrlObj
  * \brief Control object providing Xspress3 saving interface
  *******************************************************************/
-#if 0
+
 class SavingCtrlObj: public HwSavingCtrlObj {
 DEB_CLASS_NAMESPC(DebModCamera, "SavingCtrlObj","Xspress3");
 
@@ -63,7 +63,7 @@ private:
 	int m_nframes;
 	H5::H5File m_file;
 	H5::Group m_entry;
-// TODO: change this asap hardcoded ugh!
+// TODO: change this hardcoded asap!
 	H5::DataSet m_hist_dataset[9];
 	H5::DataSet m_hist_dtc_dataset[9];
 	H5::DataSpace m_hist_dataspace;
@@ -73,7 +73,7 @@ private:
 
 	bool m_useDTC;
 };
-#endif
+
 /*******************************************************************
  * \class DetInfoCtrlObj
  * \brief Control object providing Xspress3 detector info interface
@@ -160,7 +160,7 @@ private:
 	DetInfoCtrlObj m_det_info;
 	HwBufferCtrlObj*  m_bufferCtrlObj;
 	SyncCtrlObj m_sync;
-//	SavingCtrlObj* m_saving;
+	SavingCtrlObj* m_saving;
 };
 
 } // namespace Xspress3

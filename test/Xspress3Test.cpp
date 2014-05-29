@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	int debug = 2;
 	int cardIndex = 0;
 	bool noUDP = 0;
-	string directoryName = "/home/grm84/settings";
+       	string directoryName = "/home/grm84/settings";
 
 	try {
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 		// Setup user timing controls
 		int nframes = 3;
 		double m_exp_time = 5.0;
-#if 0
+
 		// setup fileformat and data saving info
 		CtSaving* saving = m_control->saving();
 		saving->setDirectory("/home/grm84/data");
@@ -91,15 +91,17 @@ int main(int argc, char *argv[])
 		m_camera->loadPlayback("/home/grm84/git/Lima/camera/xspress3/test/Zr_mca15_pass0.d16", 0, 0);
 		m_camera->setRunMode(true);
 		m_camera->setUseDtc(true);
-		m_camera->setDeadtimeCalculationEnergy(10000);
-		m_camera->setDeadtimeCorrectionParameters(-1,2.5304E-9,2.2534E-7, 2.5304E-9,2.2534E-7, true, false);
+		//		m_camera->setDeadtimeCalculationEnergy(10000);
+		//		m_camera->setDeadtimeCorrectionParameters(-1,2.5304E-9,2.2534E-7, 2.5304E-9,2.2534E-7, true, false);
 
 		m_control->acquisition()->setAcqNbFrames(nframes);
 		m_control->acquisition()->setAcqExpoTime(m_exp_time);
+		m_camera->clear();
+		m_camera->setTiming(0, 0, 0, 100);
 		m_control->prepareAcq();
 		m_control->startAcq();
 
-		struct timespec delay, remain;
+	        struct timespec delay, remain;
 		delay.tv_sec = (int)floor(m_exp_time/10.0);
 		delay.tv_nsec = (int)(1E9*(m_exp_time/10.0-floor(m_exp_time/10.0)));
 		DEB_TRACE() << "acq thread will sleep for " << m_exp_time/10.0 << " second";
@@ -127,42 +129,6 @@ int main(int argc, char *argv[])
 		delay.tv_sec = (int)floor(m_exp_time/10.0);
 		delay.tv_nsec = (int)(1E9*(m_exp_time/10.0-floor(m_exp_time/10.0)));
 		DEB_TRACE() << "acq thread will sleep for " << m_exp_time/10.0 << " second";
-		while (m_camera->isAcqRunning()) {
-			delay.tv_sec = (int)floor(m_exp_time/10.0);
-			delay.tv_nsec = (int)(1E9*(m_exp_time/10.0-floor(m_exp_time/10.0)));
-			DEB_TRACE()<< "sleep for " << m_exp_time/10.0 << " second";
-			nanosleep(&delay, &remain);
-		}
-
-		DEB_TRACE() << "Finished collection 2";
-#endif
-		nframes = 5;
-		m_exp_time = 1.0;
-		// setup fileformat and data saving info
-		CtSaving* saving = m_control->saving();
-		saving->setDirectory("/home/grm84/data");
-		saving->setFormat(CtSaving::HDF5);
-	 	saving->setPrefix("xsp3_");
-		saving->setSuffix(".hdf");
-		saving->setSavingMode(CtSaving::AutoFrame);
-		saving->setManagedMode(CtSaving::Software);
-		saving->setFramesPerFile(nframes);
-		saving->setOverwritePolicy(CtSaving::Overwrite);
-
-		long num;
-		saving->getNextNumber(num);
-		saving->setNextNumber(++num);
-		m_control->acquisition()->setAcqNbFrames(nframes);
-		m_control->acquisition()->setAcqExpoTime(m_exp_time);
-		m_control->prepareAcq();
-		m_control->startAcq();
-
-		struct timespec delay, remain;
-		DEB_TRACE() << "acq thread will sleep for " << m_exp_time/10.0 << " second";
-		delay.tv_sec = (int)floor(m_exp_time/10.0);
-		delay.tv_nsec = (int)(1E9*(m_exp_time/10.0-floor(m_exp_time/10.0)));
-		DEB_TRACE()<< "sleep for " << m_exp_time/10.0 << " second";
-		nanosleep(&delay, &remain);
 		while (m_camera->isAcqRunning()) {
 			delay.tv_sec = (int)floor(m_exp_time/10.0);
 			delay.tv_nsec = (int)(1E9*(m_exp_time/10.0-floor(m_exp_time/10.0)));

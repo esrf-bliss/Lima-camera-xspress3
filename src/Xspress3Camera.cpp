@@ -28,13 +28,10 @@
 #include "Exceptions.h"
 #include "Debug.h"
 #include "Xspress3Interface.h"
-#include <csignal>
 
 using namespace lima;
 using namespace lima::Xspress3;
 using namespace std;
-
-void SIGhandler(int sig) { }
 
 //---------------------------
 //- utility thread
@@ -74,7 +71,7 @@ Camera::Camera(int nbCards, int maxFrames, string baseIPaddress, int basePort, s
 		m_baseIPaddress(baseIPaddress), m_basePort(basePort), m_baseMACaddress(baseMACaddress), m_nb_chans(nbChans),
 		m_create_module(createScopeModule), m_modname(scopeModuleName), m_card_index(cardIndex), m_debug(debug), m_npixels(4096), m_nscalers(XSP3_SW_NUM_SCALERS), m_no_udp(noUDP),
 		m_config_directory_name(directoryName), m_trigger_mode(IntTrig), m_image_type(Bpp32), m_nb_frames(1), m_acq_frame_nb(-1),
-		m_bufferCtrlObj() { //, m_savingCtrlObj(*this) {
+															      m_bufferCtrlObj(), m_savingCtrlObj(*this)  {
 
 	DEB_CONSTRUCTOR();
 	m_card = -1;
@@ -83,7 +80,7 @@ Camera::Camera(int nbCards, int maxFrames, string baseIPaddress, int basePort, s
 	m_acq_thread->start();
 	m_read_thread = new ReadThread(*this);
 	m_read_thread->start();
-//	init();
+	init();
 }
 
 Camera::~Camera() {
@@ -145,28 +142,20 @@ void Camera::startAcq() {
 	m_read_frame_nb = 0;
 	StdBufferCbMgr& buffer_mgr = m_bufferCtrlObj.getBuffer();
 	buffer_mgr.setStartTimestamp(Timestamp::now());
-//	if (xsp3_histogram_start(m_handle, m_card) < 0) {
-//		THROW_HW_ERROR(Error) << xsp3_get_error_message();
-//	}
+	if (xsp3_histogram_start(m_handle, m_card) < 0) {
+		THROW_HW_ERROR(Error) << xsp3_get_error_message();
+	}
 	AutoMutex aLock(m_cond.mutex());
 	m_wait_flag = false;
 	m_quit = false;
 	m_cond.broadcast();
 	// Wait that Acq thread start if it's an external trigger
-	while (m_trigger_mode == ExtGate && !m_thread_running)
+	while (m_trigger_mode == ExtTrigMult && !m_thread_running)
 		m_cond.wait();
 }
 
 void Camera::stopAcq() {
 	DEB_MEMBER_FUNCT();
-
-	struct sigaction actions;
-	memset(&actions, 0, sizeof(actions));
-	sigemptyset(&actions.sa_mask);
-	actions.sa_flags = 0;
-	actions.sa_handler = SIGhandler;
-	sigaction(SIGUSR1, &actions, NULL);
-	pthread_kill(m_acq_thread->getThreadID(), SIGUSR1);
 	AutoMutex aLock(m_cond.mutex());
 	m_wait_flag = true;
 	while (m_thread_running)
@@ -211,45 +200,38 @@ void Camera::AcqThread::threadFunction() {
 			delay.tv_sec = (int)floor(m_cam.m_exp_time);
 			delay.tv_nsec = (int)(1E9*(m_cam.m_exp_time-floor(m_cam.m_exp_time)));
 			DEB_TRACE() << "acq thread will sleep for " << m_cam.m_exp_time << " second";
-			int irc;
-			while ((irc = nanosleep(&delay, &remain)) == -1 && errno == EINTR)
+			while (nanosleep(&delay, &remain) == -1 && errno == EINTR)
 			{
 				// stop called ?
 				AutoMutex aLock(m_cam.m_cond.mutex());
 				continueFlag = !m_cam.m_wait_flag;
 				if (m_cam.m_wait_flag) {
 					DEB_TRACE() << "acq thread histogram stopped  by user";
-/////////					m_cam.stop();
+					m_cam.stop();
 					break;
 				}
 				delay = remain;
 			}
-			if (continueFlag) {
-				if (m_cam.m_acq_frame_nb < m_cam.m_nb_frames - 1) {
-////					m_cam.pause();
-////					m_cam.restart();
-					DEB_TRACE() << "acq thread histogram paused and restarted";
-				} else {
-					DEB_TRACE() << "acq thread histogram stop";
-////					m_cam.stop();
-				}
-				aLock.lock();
-				++m_cam.m_acq_frame_nb;
-				m_cam.m_read_wait_flag = false;
-				DEB_TRACE() << "acq thread signal read thread - frame collected";
-				m_cam.m_cond.broadcast();
+			if (m_cam.m_acq_frame_nb < m_cam.m_nb_frames-1) {
+				m_cam.pause();
+				m_cam.restart();
+				DEB_TRACE() << "acq thread histogram paused and restarted";
+			} else {
+				DEB_TRACE() << "acq thread histogram stop";
+				m_cam.stop();
 			}
+			aLock.lock();
+			++m_cam.m_acq_frame_nb;
+			m_cam.m_read_wait_flag = false;
+			DEB_TRACE() << "acq thread signal read thread - frame collected";
+			m_cam.m_cond.broadcast();
 			aLock.unlock();
 		}
-		if (continueFlag) {
-			// wait for read thread to finish here
-			DEB_TRACE() << "acq thread Wait for read thead to finish";
-			aLock.lock();
-			m_cam.m_cond.wait();
-		} else {
-			// someones called stop!
-			m_cam.m_cond.broadcast();
-		}
+		// wait for read thread to finish here
+		DEB_TRACE() << "acq thread Wait for read thead to finish";
+		aLock.lock();
+		m_cam.m_cond.wait();
+
 		m_cam.m_status = Idle;
 		m_cam.m_thread_running = false;
 		m_cam.m_wait_flag = true;
@@ -276,7 +258,7 @@ void Camera::ReadThread::threadFunction() {
 	DEB_MEMBER_FUNCT();
 	AutoMutex aLock(m_cam.m_cond.mutex());
 	StdBufferCbMgr& buffer_mgr = m_cam.m_bufferCtrlObj.getBuffer();
-//	SavingCtrlObj& saving = m_cam.m_savingCtrlObj;
+	SavingCtrlObj& saving = m_cam.m_savingCtrlObj;
 
 	while (!m_cam.m_quit) {
 		while (m_cam.m_read_wait_flag && !m_cam.m_quit) {
@@ -294,17 +276,12 @@ void Camera::ReadThread::threadFunction() {
 			void* bptr = buffer_mgr.getFrameBufferPtr(m_cam.m_read_frame_nb);
 			DEB_TRACE() << "buffer pointer " << bptr;
 			DEB_TRACE() << "read histogram & scaler data frame number " << m_cam.m_read_frame_nb;
-//			m_cam.readFrame(bptr, m_cam.m_read_frame_nb);
-			int size = (m_cam.m_npixels + m_cam.m_nscalers) * m_cam.m_nb_chans;
-			u_int32_t *iptr = (u_int32_t*) bptr;
-			for (int i=0; i<size; i++) {
-				*iptr++ = size*m_cam.m_read_frame_nb + i;
-			}
+			m_cam.readFrame(bptr, m_cam.m_read_frame_nb);
 			HwFrameInfoType frame_info;
 			frame_info.acq_frame_nb = m_cam.m_read_frame_nb;
 			continueFlag = buffer_mgr.newFrameReady(frame_info);
 			DEB_TRACE() << "readThread::threadFunction() newframe ready ";
-//			saving.writeFrame(m_cam.m_read_frame_nb,1);
+			saving.writeFrame(m_cam.m_read_frame_nb,1);
 			++m_cam.m_read_frame_nb;
 		}
 		aLock.lock();
@@ -464,11 +441,11 @@ bool Camera::isAcqRunning() const {
 	AutoMutex aLock(m_cond.mutex());
 	return m_thread_running;
 }
-#if 0
+
 SavingCtrlObj* Camera::getSavingCtrlObj() {
 	return &m_savingCtrlObj;
 }
-#endif
+
 /////////////////////////////////
 // xspress3 specific stuff now //
 /////////////////////////////////

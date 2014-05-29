@@ -44,6 +44,9 @@ Interface::Interface(Camera& cam) :
 	HwSyncCtrlObj *sync = &m_sync;
 	m_cap_list.push_back(sync);
 
+	m_saving = m_cam.getSavingCtrlObj();
+	HwSavingCtrlObj *saving = m_saving;
+	m_cap_list.push_back(saving);
 
 	m_sync.setNbFrames(1);
 	m_sync.setExpTime(1.0);
@@ -63,6 +66,7 @@ Interface::~Interface() {
 	DEB_DESTRUCTOR();
 	delete &m_det_info;
 	delete &m_sync;
+//	delete &m_saving;
 }
 
 void Interface::getCapList(CapList &cap_list) const {
