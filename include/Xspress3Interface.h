@@ -30,13 +30,6 @@
 #include "lima/HwInterface.h"
 #include <vector>
 
-namespace H5 {
-	class H5File;
-	class Group;
-	class DataSet;
-	class DataSpace;
-}
-
 namespace lima {
 namespace Xspress3 {
 
