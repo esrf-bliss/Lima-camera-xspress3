@@ -75,7 +75,7 @@
 #define XSP3_HW_DEFINED_SCALERS 8
 
 #define XSP3_ENERGIES 4096
-#define XSP3_MAX_CARDS 8			//!< Maximum number of cards in a logical system
+#define XSP3_MAX_CARDS 16			//!< Maximum number of cards in a logical system
 #define XSP3_MAX_CARD_INDEX 62		//!< Maximum card index across all systems
 #define XSP3_MAX_PATH 20
 #define XSP3_MAX_IP_CHARS 16
@@ -112,6 +112,8 @@
 #define XSP3_CANNOT_OPEN_FILE	-10
 #define XSP3_FILE_READ_FAILED	-11
 #define XSP3_FILE_WRITE_FAILED	-12
+#define XSP3_FILE_RENAME_FAILED	-13
+#define XSP3_LOG_FILE_MISSING	-14
 
 #define XSP3_WOULD_BLOCK		-20	
 
@@ -283,6 +285,29 @@ typedef struct clock_setup_struct
 	int fpga_clk_delay;	//!< FPGA clock delay in LMK03200 for Xspress3 only.
 } ClockSetup; 
 
+typedef enum {
+Xsp3SysLog_StartNewFile=1,
+Xsp3SysLog_KeepFiles=2,
+Xsp3SysLog_DisableADCTemp=0x10
+} Xsp3SysLogFlags;
+
+typedef struct xsp3_sys_log_struct 
+{
+	int active;
+	Xsp3SysLogFlags flags;
+	char *fname;
+	int debug;
+	FILE *ofp;
+	int period;
+	pthread_t tid;
+	int count;
+	int max_count;
+	int max_file_num;
+	int error_code;
+	struct timeval start_time;
+} Xsp3SysLogger;
+
+
 typedef struct _XSP3Path {
 	void* femHandle;				//!< Pointer to data structure managing TCP communication with the FEM/ZYNQ.
 	int type;						//!< FEM_COMPOSITE => Parent node of multi-card system. FEM_SINGLE => leaf node of multi card system or singe node for 1 card system.
@@ -331,6 +356,7 @@ typedef struct _XSP3Path {
 	int itfg_trig_mode;										//!< ITFG setup for calculatio/estimation of live_ticks in sub-frames mode, stored on top level (or only) path
 	int itfg_gap_mode;										//!< ITFG setup for calculatio/estimation of live_ticks in sub-frames mode, stored on top level (or only) path
 	int itfg_acq_in_pause;									//!< ITFG setup for calculatio/estimation of live_ticks in sub-frames mode, stored on top level (or only) path
+	Xsp3SysLogger sys_log;									//!< System looger information, used in top (or single) path only.
 	} XSP3Path; 
 
 typedef struct trigger_b_setttings
@@ -802,6 +828,16 @@ int xsp3_write_cshare_control(int path, int chan, Xsp3CShrControl *set);
 int xsp3_read_cshare_control(int path, int chan, Xsp3CShrControl *set);
 int xsp3_write_cshare_mapping(int path, int chan, int num_neb, int *rel_board, int *chan_of_card);
 int xsp3_read_cshare_mapping(int path, int chan, int num_neb, int *rel_board, int *chan_of_card);
+
+
+int xsp3_sys_log_start(int path, char *fname, int period, int max_count, Xsp3SysLogFlags flags);
+int xsp3_sys_log_continue(int path);
+int xsp3_sys_log_stop(int path);
+int xsp3_sys_log_pause(int path);
+int xsp3_sys_log_stop_or_pause(int path, int pause);
+int xsp3_sys_log_roll_files(int path);
+int xsp3_sys_log_open(int path, int truncate);
+
 #ifdef __cplusplus
 }
 #endif
@@ -1766,7 +1802,8 @@ extern const char *xsp3_bram_name[XSP3_REGION_RAM_MAX+1];
 extern char *xsp3_feature_test_data_source_a[4] ;
 extern char *xsp3_feature_test_data_source_b[4] ;
 extern char *xsp3_feature_real_data_source[16] ;
-extern char *xsp3_feature_data_mux[16] ;
+extern char *xsp3_feature_data_mux20_pr[8] ;
+extern char *xsp3_feature_data_mux3[2] ;
 
 extern char *xsp3_feature_inl_corr_a[4] ;
 extern char *xsp3_feature_inl_corr_b[4] ;
