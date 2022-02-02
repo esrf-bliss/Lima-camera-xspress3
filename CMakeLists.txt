@@ -62,13 +62,6 @@ find_library(LIB_IMGMOD NAMES img_mod
   )
 if (("${LIB_IMGMOD}" STREQUAL "LIB_IMGMOD-NOTFOUND"))
   message(FATAL_ERROR "${NAME} : libimg_mod not found")
-else()
-  add_library(Xspress3::imgmod SHARED IMPORTED)
-  set_target_properties(Xspress3::imgmod PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/sdk/include")
-  set_target_properties(Xspress3::imgmod PROPERTIES
-    IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-    IMPORTED_LOCATION "${LIB_IMGMOD}")
 endif()
 
 find_library(LIB_XSPRESS3 NAMES xspress3
@@ -78,13 +71,6 @@ find_library(LIB_XSPRESS3 NAMES xspress3
   )
 if (("${LIB_XSPRESS3}" STREQUAL "LIB_XSPRESS3-NOTFOUND"))
   message(FATAL_ERROR "${NAME} : libxspress3 not found")
-else()
-  add_library(Xspress3::xspress3 SHARED IMPORTED)
-  set_target_properties(Xspress3::imgmod PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/sdk/include")
-  set_target_properties(Xspress3::imgmod PROPERTIES
-    IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-    IMPORTED_LOCATION "${LIB_XSPRESS3}")
 endif()
 
 # CMake additional macros
@@ -134,7 +120,10 @@ target_include_directories(xspress3
     PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-target_link_libraries(xspress3 PUBLIC limacore Xspress3::imgmod Xspress3::xspress3)
+target_include_directories(xspress3 PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sdk/include>")
+
+target_link_libraries(xspress3 PUBLIC limacore ${LIB_IMGMOD} ${LIB_XSPRESS3})
+
 
 # Binding code for python
 if(LIMA_ENABLE_PYTHON)
@@ -152,7 +141,7 @@ endif()
 ## Installation
 
 install(
-  TARGETS xspress3 Xspress3::imgmod Xspress3::xspress3
+  TARGETS xspress3
   EXPORT "${TARGETS_EXPORT_NAME}"
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}   # import library
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   # .so files are libraries
