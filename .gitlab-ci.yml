@@ -57,6 +57,7 @@ deploy-stable:
     url: http://bcu-ci.esrf.fr/stable
   dependencies:
     - build-linux
+    - build-win
     - build-noarch
   script:
     - cp -Rf dist/* /conda/
