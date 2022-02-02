@@ -162,7 +162,7 @@ typedef struct
 extern "C" {
 #endif
 
-#if defined(__LINUX__) || defined(linux)
+#if defined(__LINUX__) || defined(linux) || defined (__linux__)
 int _os_datmod (char *name, off_t s, u_int16 *attr_rev, u_int16 *type_lang, u_int32 perm, void **mod, void **mod_head);
 int _os_link(char **namep, void **mod_head, void **mod, u_int16 *type_lang, u_int16 *att_rev);
 int _os_link(char **namep, void **mod_head, void **mod, u_int16 *type_lang, u_int16 *att_rev);
