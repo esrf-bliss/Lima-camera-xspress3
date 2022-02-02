@@ -124,6 +124,7 @@ target_include_directories(xspress3 PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SO
 
 target_link_libraries(xspress3 PUBLIC limacore ${LIB_IMGMOD} ${LIB_XSPRESS3})
 
+target_compile_definitions(xspress3 PUBLIC USE_GTK=0)
 
 # Binding code for python
 if(LIMA_ENABLE_PYTHON)
