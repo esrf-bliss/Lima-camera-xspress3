@@ -45,6 +45,24 @@ private:
     Camera& m_cam;
 };
 
+
+//---------------------------
+//- ArrayBuffer
+//---------------------------
+template <typename T>
+class Camera::ArrayBuffer : public BufferBase
+{
+public:
+    ArrayBuffer(int size) : BufferBase(new T[size]) {}
+
+    ~ArrayBuffer() { delete [] asArray(); }
+
+    const char *type() const override { return "ArrayBuffer"; }
+
+    T *asArray() { return static_cast<T *>(data); }
+};
+
+
 //---------------------------
 // @brief  Ctor
 //---------------------------
@@ -769,12 +787,11 @@ void Camera::getFanTemperatures(Data& sensorData) {
     sensorData.frameNumber = 0;
     sensorData.dimensions.push_back(5);
     sensorData.dimensions.push_back(n);
-    Buffer *buff = new Buffer();
-    double *sdata = new double[n*5];
+    ArrayBuffer<double> *buff = new ArrayBuffer<double>(n*5);
+    double *sdata = buff->asArray();
     for (int i = 0; i < n * 5; i++) {
         sdata[i] = 0.5 * reg[i];
     }
-    buff->data = sdata;
     sensorData.setBuffer(buff);
     buff->unref();
     DEB_TRACE() << "returning Data.size() " << sensorData.size();
@@ -1082,13 +1099,13 @@ void Camera::readScalers(Data& scalerData, int frame_nb, int channel) {
         scalerData.dimensions.push_back(1);
         scalerData.frameNumber = frame_nb;
 
-        Buffer *fbuf = new Buffer();
+        ArrayBuffer<double> *fbuf = new ArrayBuffer<double>(m_nscalers+2);
         u_int32_t *fptr = (u_int32_t*)frame_info.frame_ptr;
         fptr += channel * (m_npixels + m_nscalers) + m_npixels;
         DEB_TRACE() << DEB_VAR1(m_use_dtc);
 
         scalerData.type = Data::DOUBLE;
-        double *buff = new double[m_nscalers+2];
+        double *buff = fbuf->asArray();
         double *bptr = buff;
 
         if (m_use_dtc) {
@@ -1112,7 +1129,6 @@ void Camera::readScalers(Data& scalerData, int frame_nb, int channel) {
         *bptr++ = 100.0*(allevt*(evtwidth+1) + resets)/ctime;
         *bptr++ = ctime/(ctime - (allevt*(evtwidth+1) + resets));
 
-        fbuf->data = buff;
         scalerData.setBuffer(fbuf);
         fbuf->unref();
     }
@@ -1168,14 +1184,13 @@ void Camera::readHistogram(Data& histData, int frame_nb, int channel) {
         histData.dimensions.push_back(1);
         histData.frameNumber = frame_nb;
 
-        Buffer *fbuf = new Buffer();
         u_int32_t *fptr = (u_int32_t*) frame_info.frame_ptr;
         fptr += channel * (m_npixels + m_nscalers);
         u_int32_t *scalerData = (u_int32_t*) frame_info.frame_ptr;
         scalerData += channel * (m_npixels + m_nscalers) + m_npixels;
         if (m_use_dtc) {
-            double *buff = new double[m_npixels];
-            double *dptr = buff;
+            ArrayBuffer<double> *fbuf = new ArrayBuffer<double>(m_npixels);
+            double *dptr = fbuf->asArray();
             double dtcFactor;
             double dtcAllEvent;
             if (xsp3_calculateDeadtimeCorrectionFactors(m_handle, scalerData, &dtcFactor, &dtcAllEvent, 1, channel, 1) < 0) {
@@ -1185,18 +1200,18 @@ void Camera::readHistogram(Data& histData, int frame_nb, int channel) {
             for (int i = 0; i < m_npixels; i++) {
                 *dptr++ = (double) *fptr++ * dtcFactor;
             }
-            fbuf->data = buff;
+            histData.setBuffer(fbuf);
+            fbuf->unref();
         } else {
-            u_int32_t *buff = new u_int32_t[m_npixels];
-            u_int32_t *bptr = buff;
+            ArrayBuffer<u_int32_t> *fbuf = new ArrayBuffer<u_int32_t>(m_npixels);
+            u_int32_t *bptr = fbuf->asArray();
             histData.type = Data::UINT32;
             for (int i = 0; i < m_npixels; i++) {
                 *bptr++ = *fptr++;
             }
-            fbuf->data = buff;
+            histData.setBuffer(fbuf);
+            fbuf->unref();
         }
-        histData.setBuffer(fbuf);
-        fbuf->unref();
     }
 }
 
@@ -1216,10 +1231,8 @@ void Camera::readRawHistogram(Data& histData, int frame_nb, int channel) {
     histData.dimensions.push_back(1);
     histData.frameNumber = frame_nb;
 
-    Buffer *fbuf = new Buffer();
-
-    u_int32_t *buff = new u_int32_t[m_npixels];
-    u_int32_t *bptr = buff;
+    ArrayBuffer<u_int32_t> *fbuf = new ArrayBuffer<u_int32_t>(m_npixels);
+    u_int32_t *bptr = fbuf->asArray();
 
     DEB_TRACE() << "Camera::readRawHistogram " << DEB_VAR3(frame_nb, m_npixels, channel);
     if (xsp3_histogram_read3d(m_handle, (u_int32_t*) bptr, 0, channel, frame_nb,
@@ -1227,7 +1240,6 @@ void Camera::readRawHistogram(Data& histData, int frame_nb, int channel) {
         THROW_HW_ERROR(Error) << xsp3_get_error_message();
     }
 
-    fbuf->data = buff;
     histData.setBuffer(fbuf);
     fbuf->unref();
 }

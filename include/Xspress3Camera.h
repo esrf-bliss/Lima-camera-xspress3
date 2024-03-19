@@ -233,6 +233,7 @@ public:
 
 private:
 	class ReadThread;
+	template <typename T> class ArrayBuffer;
 
 	// xspress3 specific
 	int m_nb_cards;
