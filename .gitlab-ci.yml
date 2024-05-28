@@ -14,8 +14,7 @@ stages:
 build-linux:
   extends: .build-cpp
   tags:
-    - conda
-    - cos7
+    - linux
 
 build-noarch:
   stage: build-noarch
@@ -27,7 +26,6 @@ build-noarch:
     paths:
       - dist
   tags:
-    - conda
     - linux
 
 deploy-devel:

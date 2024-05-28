@@ -44,6 +44,8 @@ namespace Xspress3
 	virtual void getStatus(StatusType& status);
 	virtual int  getNbHwAcquiredFrames();
 
+  private:
+	Interface(const Interface& o);
   };
 };
 
