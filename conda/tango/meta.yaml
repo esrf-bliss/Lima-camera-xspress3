@@ -23,7 +23,7 @@ requirements:
     - git
     - lima-core
   run:
-    - lima-tango-server
+    - lima-tango-server 1.10
     - lima-camera-xspress3
 
 about:
