@@ -6,8 +6,6 @@ This is the reference documentation of the Xspress3 Tango device.
 you can also find some useful information about the camera models/prerequisite/installation/configuration/compilation in the :ref:`Xspress3 camera plugin <camera-xspress3>` section.
 
 
-test reference to camera plugin section: :ref:`camera-adsc`
-
 Properties
 ----------
 
