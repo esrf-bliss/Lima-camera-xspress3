@@ -656,7 +656,7 @@ void Camera::restoreSettings(bool force_mismatch) {
     DEB_MEMBER_FUNCT();
     DEB_TRACE() << "Camera::restoreSettings() " << DEB_VAR2(m_config_directory_name,force_mismatch);
     if (xsp3_restore_settings(m_handle, (char*) m_config_directory_name.c_str(), force_mismatch) < 0) {
-        THROW_HW_ERROR(Error) << xsp3_get_error_message();
+        DEB_ALWAYS() << xsp3_get_error_message();
     }
 }
 
